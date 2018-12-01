@@ -7,7 +7,8 @@
     "gutenberg-download": "sh gutenberg-download.sh",
     "gutenberg-extract": "sh gutenberg-extract.sh",
     "pregutenberg-normalize": "mkdir json",
-    "gutenberg-normalize": "node gutenberg-normalize"
+    "gutenberg-normalize": "node gutenberg-normalize",
+    "format": "prettier --write '*.{js,json,md}'"
   },
   "author": "Christian Murphy",
   "license": "MIT",
@@ -21,6 +22,12 @@
     "unified": "^7.0.2"
   },
   "devDependencies": {
+    "husky": "^1.2.0",
     "prettier": "^1.15.3"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run format"
+    }
   }
 }
