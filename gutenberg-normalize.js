@@ -14,26 +14,43 @@ const reporter = require("vfile-reporter");
 const titleRegex = /title:\w*(.+)/i;
 const authorRegex = /author:\w*(.+)/i;
 
-const simplifier = () => (ast, vfile) => {
+function bookAuthorAndTitle(ast, vfile) {
+  // find preformatted metadata tag
   const metadataNode = select("pre", ast);
   let author, title;
   if (metadataNode) {
+    // look for text that looks like title and author
     const titleNode = find(metadataNode, n => titleRegex.test(n.value));
     const authorNode = find(metadataNode, n => authorRegex.test(n.value));
 
     if (titleNode) {
+      // extract the raw text
       title = titleRegex.exec(titleNode.value)[1].trim();
     } else {
-      vfile.fail("missing title");
+      // error when missing
+      vfile.fail("missing title", metadataNode);
     }
+
     if (authorNode) {
+      // extract the raw text
       author = authorRegex.exec(authorNode.value)[1].trim();
     } else {
-      vfile.fail("missing author");
+      // error when missing
+      vfile.fail("missing author", metadataNode);
     }
   } else {
-    vfile.fail("missing metadata");
+    // error when missing
+    vfile.fail("missing metadata", ast);
   }
+
+  return {
+    author,
+    title
+  };
+}
+
+const simplifier = () => (ast, vfile) => {
+  const { author, title } = bookAuthorAndTitle(ast, vfile);
 
   return {
     type: "book",
