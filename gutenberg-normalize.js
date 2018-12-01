@@ -120,6 +120,15 @@ function bookChapterParagraphs(vfile, chapter, chapterIndex, chapterList) {
       const finalNodes = hSelectAll(":last-child", chapter.parent);
       end = finalNodes[finalNodes.length - 1];
     }
+
+    if (chapter.parent !== end.parent) {
+      vfile.info(
+        "cannot handle chapters where end is in a different section",
+        chapter
+      );
+      return [];
+    }
+
     const chapterContent = findAllBetween(chapter.parent, chapter, end);
 
     // find all paragraphs in chapter
