@@ -53,10 +53,11 @@ Example output
     {
       "type": "chapter",
       "title": "lorem ipsum",
+      "level": "h2",
       "children": [
         {
-          "type": "text",
-          "content": "lorem ipsum"
+          "type": "paragraph",
+          "value": "lorem ipsum"
         }
       ]
     }
