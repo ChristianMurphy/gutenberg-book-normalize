@@ -6,7 +6,7 @@
   "scripts": {
     "gutenberg-download": "sh gutenberg-download.sh",
     "gutenberg-extract": "sh gutenberg-extract.sh",
-    "pregutenberg-normalize": "mkdir json",
+    "pregutenberg-normalize": "rm -rf json && mkdir json",
     "gutenberg-normalize": "node gutenberg-normalize",
     "format": "prettier --write '*.{js,json,md}'"
   },
@@ -14,6 +14,7 @@
   "license": "MIT",
   "dependencies": {
     "globby": "^8.0.1",
+    "hast-util-select": "^3.0.0",
     "install": "^0.12.2",
     "npm": "^6.4.1",
     "rehype-parse": "^6.0.0",
