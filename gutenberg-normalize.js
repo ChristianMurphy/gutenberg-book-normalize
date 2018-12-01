@@ -69,13 +69,13 @@ function bookChapters(ast, vfile) {
     chapters.sort(byPosition);
 
     // extract level and title for chapter
-    return chapters.map((n, i, l) => ({
+    return chapters.map((node, index, list) => ({
       type: "chapter",
-      title: uSelectAll("text", n)
+      title: uSelectAll("text", node)
         .map(n => n.value)
         .join(" "),
-      level: n.tagName,
-      children: bookChapterParagraphs(vfile, n, i, l)
+      level: node.tagName,
+      children: bookChapterParagraphs(vfile, node, index, list)
     }));
   } catch (err) {
     // stack overflow means no chapters
@@ -138,6 +138,22 @@ const simplifier = () => (ast, vfile) => {
   };
 };
 
+const emptyBookChecker = () => (ast, vfile) => {
+  const paragraphs = ast.children.reduce(
+    (counter, chapter) => counter + chapter.children.length,
+    0
+  );
+
+  if (paragraphs < 1) {
+    vfile.fail("all chapters are empty");
+  }
+  if (paragraphs < ast.children.length) {
+    vfile.fail("less paragraphs than chapters");
+  }
+
+  return ast;
+};
+
 (async () => {
   // find html files
   const paths = await globby(["extracted/**/*.{html,htm}"]);
@@ -145,7 +161,8 @@ const simplifier = () => (ast, vfile) => {
   const processor = unified()
     .use(rehype) // parse HTML
     .use(santize) // remove fluff content
-    .use(simplifier); // reformat to new tree format
+    .use(simplifier) // reformat to new tree format
+    .use(emptyBookChecker); // ensures there is some content in the book
 
   processor.Compiler = JSON.stringify;
   processor.freeze();
