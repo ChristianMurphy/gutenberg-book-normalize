@@ -40,9 +40,7 @@ npm run gutenberg-extract
 npm run gutenberg-normalize
 ```
 
-Example output
-
-:warning: WORK IN PROGRESS, format will change
+Example output:
 
 ```json
 {
