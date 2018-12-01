@@ -12,9 +12,12 @@ const { selectAll: uSelectAll } = require("unist-util-select");
 const find = require("unist-util-find");
 const reporter = require("vfile-reporter");
 const findAllBetween = require("unist-util-find-all-between");
+const location = require("vfile-location");
 
 const titleRegex = /title:\w*(.+)/i;
 const authorRegex = /author:\w*(.+)/i;
+
+let toOffset;
 
 function bookAuthorAndTitle(ast, vfile) {
   // find preformatted metadata tag
@@ -61,6 +64,10 @@ function bookChapters(ast, vfile) {
       vfile.fail("no chapters", ast);
     }
 
+    // order chapters by their location in the document
+    // prevents paragraph duplication between chapters
+    chapters.sort(byPosition);
+
     // extract level and title for chapter
     return chapters.map((n, i, l) => ({
       type: "chapter",
@@ -74,6 +81,11 @@ function bookChapters(ast, vfile) {
     // stack overflow means no chapters
     vfile.fail("no chapters", ast);
   }
+}
+
+// sort nodes by their starting position in the document, in ascending order
+function byPosition(a, b) {
+  return toOffset(a.position.start) - toOffset(b.position.start);
 }
 
 function bookChapterParagraphs(vfile, chapter, chapterIndex, chapterList) {
@@ -108,6 +120,8 @@ function bookChapterParagraphs(vfile, chapter, chapterIndex, chapterList) {
 const simplifier = () => (ast, vfile) => {
   // add parent information to each node, needed to determine end of last chapter
   ast = require("unist-util-parents")(ast);
+  // allow offset to be determined from position, used for sorting of chapters
+  toOffset = location(vfile).toOffset;
 
   // lookup author and title
   const { author, title } = bookAuthorAndTitle(ast, vfile);
