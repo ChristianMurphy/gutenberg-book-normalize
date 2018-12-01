@@ -20,20 +20,35 @@ const authorRegex = /author:\w*(.+)/i;
 let toOffset;
 
 function bookAuthorAndTitle(ast, vfile) {
-  // find preformatted metadata tag
-  const metadataNode = hSelect("pre", ast);
-  let author, title;
-  if (metadataNode) {
+  try {
+    // find preformatted metadata tag
+    const metadataList = hSelectAll("pre, p", ast);
+    let author, title;
+
+    if (metadataList.length < 1) {
+      vfile.fail("could not find metadata", ast);
+    }
+
     // look for text that looks like title and author
-    const titleNode = find(metadataNode, n => titleRegex.test(n.value));
-    const authorNode = find(metadataNode, n => authorRegex.test(n.value));
+    const titleNode = metadataList.reduce(
+      (acc, metadata) =>
+        acc ||
+        find(metadata, n => {
+          return titleRegex.test(n.value);
+        }),
+      null
+    );
+    const authorNode = metadataList.reduce(
+      (acc, metadata) => acc || find(metadata, n => authorRegex.test(n.value)),
+      null
+    );
 
     if (titleNode) {
       // extract the raw text
       title = titleRegex.exec(titleNode.value)[1].trim();
     } else {
       // error when missing
-      vfile.fail("missing title", metadataNode);
+      vfile.fail("missing title", ast);
     }
 
     if (authorNode) {
@@ -41,17 +56,19 @@ function bookAuthorAndTitle(ast, vfile) {
       author = authorRegex.exec(authorNode.value)[1].trim();
     } else {
       // error when missing
-      vfile.fail("missing author", metadataNode);
+      vfile.fail("missing author", ast);
     }
-  } else {
-    // error when missing
-    vfile.fail("missing metadata", ast);
-  }
 
-  return {
-    author,
-    title
-  };
+    return {
+      author,
+      title
+    };
+  } catch (err) {
+    if (err.reason) {
+      throw err;
+    }
+    vfile.fail("could not find metadata", ast);
+  }
 }
 
 function bookChapters(ast, vfile) {
@@ -78,8 +95,11 @@ function bookChapters(ast, vfile) {
       children: bookChapterParagraphs(vfile, node, index, list)
     }));
   } catch (err) {
+    if (err.reason) {
+      throw err;
+    }
     // stack overflow means no chapters
-    vfile.fail("no chapters", ast);
+    vfile.fail("exception parsing chapters", ast);
   }
 }
 
@@ -113,6 +133,9 @@ function bookChapterParagraphs(vfile, chapter, chapterIndex, chapterList) {
           .join(" ")
       }));
   } catch (err) {
+    if (err.reason) {
+      throw err;
+    }
     vfile.fail("could not match", chapter);
   }
 }
