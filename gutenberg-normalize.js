@@ -8,17 +8,31 @@ const { readSync: toVfile } = require("to-vfile");
 const { writeFile } = require("fs").promises;
 const { basename } = require("path");
 const { select, selectAll } = require("hast-util-select");
+const find = require("unist-util-find");
+const reporter = require("vfile-reporter");
 
-const simplifier = () => ast => {
+const titleRegex = /title:\w*(.+)/i;
+const authorRegex = /author:\w*(.+)/i;
+
+const simplifier = () => (ast, vfile) => {
   const metadataNode = select("pre", ast);
   let author, title;
   if (metadataNode) {
-    const metadataText = metadataNode.children[0].value;
-    title = /title:\w*(.+)/i.exec(metadataText);
-    author = /author:\w*(.+)/i.exec(metadataText);
+    const titleNode = find(metadataNode, n => titleRegex.test(n.value));
+    const authorNode = find(metadataNode, n => authorRegex.test(n.value));
 
-    if (title) title = title[1].trim();
-    if (author) author = author[1].trim();
+    if (titleNode) {
+      title = titleRegex.exec(titleNode.value)[1].trim();
+    } else {
+      vfile.fail("missing title");
+    }
+    if (authorNode) {
+      author = authorRegex.exec(authorNode.value)[1].trim();
+    } else {
+      vfile.fail("missing author");
+    }
+  } else {
+    vfile.fail("missing metadata");
   }
 
   return {
@@ -45,7 +59,7 @@ const simplifier = () => ast => {
       const content = await processor.process(toVfile(p));
       await writeFile("json/" + basename(p) + ".json", content);
     } catch (err) {
-      console.error(err);
+      console.error(reporter(err));
     }
   }
 })();
