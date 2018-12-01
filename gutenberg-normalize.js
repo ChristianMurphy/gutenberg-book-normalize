@@ -7,7 +7,8 @@ const santize = require("rehype-sanitize");
 const { readSync: toVfile } = require("to-vfile");
 const { writeFile } = require("fs").promises;
 const { basename } = require("path");
-const { select, selectAll } = require("hast-util-select");
+const { select: hSelect, selectAll: hSelectAll } = require("hast-util-select");
+const { select: uSelect, selectAll: uSelectAll } = require("unist-util-select");
 const find = require("unist-util-find");
 const reporter = require("vfile-reporter");
 
@@ -16,7 +17,7 @@ const authorRegex = /author:\w*(.+)/i;
 
 function bookAuthorAndTitle(ast, vfile) {
   // find preformatted metadata tag
-  const metadataNode = select("pre", ast);
+  const metadataNode = hSelect("pre", ast);
   let author, title;
   if (metadataNode) {
     // look for text that looks like title and author
@@ -49,13 +50,36 @@ function bookAuthorAndTitle(ast, vfile) {
   };
 }
 
+function bookChapters(ast, vfile) {
+  try {
+    // use headers as chapter markers
+    const chapters = hSelectAll("h1, h2, h3, h4, h5, h6", ast);
+
+    if (chapters.length < 1) {
+      vfile.fail("no chapters", ast);
+    }
+
+    return chapters.map(n => ({
+      type: "chapter",
+      title: uSelectAll("text", n)
+        .map(n => n.value)
+        .join(" "),
+      level: n.tagName
+    }));
+  } catch (err) {
+    vfile.fail("no chapters", ast);
+  }
+}
+
 const simplifier = () => (ast, vfile) => {
   const { author, title } = bookAuthorAndTitle(ast, vfile);
+  const children = bookChapters(ast, vfile);
 
   return {
     type: "book",
     author,
-    title
+    title,
+    children
   };
 };
 
@@ -68,7 +92,7 @@ const simplifier = () => (ast, vfile) => {
     .use(santize) // remove fluff content
     .use(simplifier); // reformat to new tree format
 
-  processor.Compiler = JSON.stringify;
+  processor.Compiler = tree => JSON.stringify(tree, null, 4);
   processor.freeze();
 
   for (const p of paths) {
