@@ -18,7 +18,7 @@ npm install
 
 Uses project Gutenberg's official robot access guide recommendations <https://www.gutenberg.org/wiki/Gutenberg:Information_About_Robot_Access_to_our_Pages>
 
-:warning: size is over 50 gigabytes, download time can take 18 hours or more.
+:warning: size is over 75 gigabytes, download time can take 24 hours or more.
 
 ```bash
 npm run gutenberg-download
